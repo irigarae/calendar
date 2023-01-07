@@ -80,12 +80,24 @@
     }
     .mini th {
       height: initial;
-      /*text-align: right;*/
+      text-align: center;
     }
-    .festivo, td:last-child {
-      color: #DF3232;
+    .festivo, .domingo {
+      border-color: black;
     }
     span {
+      position: relative;
+      border: 2px solid transparent;
+      border-radius: 5px;
+      display: inline-block;
+      min-width: 1em;
+      padding: 0 .2em;
+    }
+    .mini span {
+      padding: 0;
+    }
+    .luna {
+      display: inline;
       position: relative;
     }
     svg {
@@ -265,11 +277,14 @@ diciembre: [5,12,19,27],
             if (lunas[nombreMeses[mes]].includes(dia.getDate())) {
               td.innerHTML = funLunas();
             }
-            td.innerHTML += `<span>${dia.getDate()}</span>`;
-            td.classList.toggle("festivo", festivos[nombreMeses[mes]].includes(dia.getDate()));
-            td.style.cursor = 'pointer';
-            td.title = diaId(anyo, mes, dia.getDate());
-            td.addEventListener('click', clickFestivo);
+            const date = document.createElement('span')
+            date.textContent = dia.getDate()
+            date.classList.toggle("festivo", festivos[nombreMeses[mes]].includes(dia.getDate()));
+            date.classList.toggle("domingo", dia.getDay() === 0)
+            date.style.cursor = 'pointer';
+            date.title = diaId(anyo, mes, dia.getDate());
+            date.addEventListener('click', clickFestivo);
+            td.appendChild(date)
             arr[linea][col] = td;
             dia.setDate(dia.getDate() + 1);
           }
@@ -300,7 +315,7 @@ diciembre: [5,12,19,27],
     function ponerSiguienteLuna() {
       const lunaActual = posiblesLunas[primeraLuna];
       primeraLuna = Object.keys(posiblesLunas)[(Object.keys(posiblesLunas).indexOf(primeraLuna) + 1) % 4];
-      return '<span>' + lunaActual + '</span>';
+      return '<span class="luna">' + lunaActual + '</span>';
     }
 
     function clickFestivo() {
