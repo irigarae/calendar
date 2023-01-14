@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" stroke="black" stroke-width="2"><rect x="4" y="7" fill="none" width="24" height="18"></rect><path d="M10 7 v18 M16 7 v18 M22 7 v18 M16 7 v18"></path><path d="M4 13 h24 M4 19 h24"></path></svg>'>
+  <title>Calendar</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    *::before, *::after {
+      box-sizing: border-box;
+    }
+    @media print {
+    }
+    @media screen {
+    }
+    body {
+      font-family: system-ui;
+    }
+    .leaf {
+      width: 297mm;
+      height: 210mm;
+    }
+    td, th {
+      border: 1px solid black;
+    }
+    .miniature td, .miniature th {
+      border: none;
+    }
+    .miniature {
+      border-spacing: .2cm 0;
+      padding: .2cm;
+    }
+    .leaf {
+      border-collapse: collapse;
+      table-layout: fixed;
+      page-break-inside: avoid;
+      page-break-after: always;
+    }
+    .leaf-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .leaf-title {
+      font-size: 2cm;
+      font-weight: bold;
+    }
+    .day-name {
+      height: 1cm;
+      font-size: x-large;
+    }
+    .miniature .day-name {
+      height: initial;
+      font-size: initial;
+    }
+    .miniature .day {
+      text-align: right;
+    }
+    .other-month .day-number {
+      opacity: 10%;
+    }
+    .leaf-body td > div {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    .leaf-body .day-number {
+      position: absolute;
+      top: 1mm;
+      right: 1mm;
+      font-size: x-large;
+    }
+    .day-number {
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      /*border-width: 2px;*/
+      /*border-style: solid;*/
+      /*border-color: transparent;*/
+      /*border-radius: 5px;*/
+    }
+    .holiday, .sunday .day-number {
+      color: #DF3232;
+      /*border-color: black;*/
+    }
+    .moon::before {
+      color: transparent;
+      background-size: cover;
+    }
+    .moon.new::before {
+      content: '🌑'; /* 🌑 */
+      background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><circle cx="25" cy="25" r="16" fill="black" stroke="black" stroke-width="3"/></svg>');
+    }
+    .moon.crescent::before {
+      content: '🌓'; /* 🌒🌓🌔 */
+      background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><circle stroke-width="3" stroke="black" fill="none" r="16" cy="25" cx="25"/><path stroke-width="0" fill="black" d="m25,9a16,16 0 0 0 0,32l0,-1.5a18,18 0 0 0 0,-29l0,-1.5z"/></svg>')
+    }
+    .moon.full::before {
+      content: '🌕'; /* 🌕 */
+      background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><circle cx="25" cy="25" r="16" fill="none" stroke="black" stroke-width="3"/></svg>')
+    }
+    .moon.waning::before {
+      content: '🌗'; /* 🌖🌗🌘 */
+      background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50"><circle stroke-width="3" stroke="black" fill="none" r="16" cy="25" cx="25"/><path stroke-width="0" fill="black" d="m25,9a16,16 0 0 1 0,32l0,-1.5a18,18 0 0 1 0,-29l0,-1.5z"/></svg>')
+    }
+  </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script>
+const capitalize = (s) => s[0].toUpperCase() + s.slice(1)
+const isoDateFormat = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+const startOfWeek = (date) => {
+  const dayOfWeek = date.getDay()
+  const firstDayOfWeek = new Date(date)
+  const firstDayOfWeekIndex = 1 // 1 because we want weeks to start on Monday
+  const diff = dayOfWeek >= firstDayOfWeekIndex ? dayOfWeek - firstDayOfWeekIndex
+                                                : 6 - dayOfWeek
+  firstDayOfWeek.setDate(date.getDate() - diff)
+  firstDayOfWeek.setHours(0, 0, 0, 0)
+  return firstDayOfWeek
+}
+const weekdayNames = (locale, style) => {
+  const start = startOfWeek(new Date())
+  return Array.from({length: 7})
+               .map((_, i) => new Date(start.getTime() + i * 86400 * 1000))
+               .map((d) => d.toLocaleString(locale, {weekday: style}))
+}
+const days = (year, month) => {
+  const start = startOfWeek(new Date(year, month - 1)) // months are 0-11
+  return Array.from({length: 7 * 6}) // we force 6 rows (even in 28 days February starting on a Monday)
+              .map((_, i) => new Date(start.getTime() + i * 86400 * 1000))
+              .map((d) => ({
+                date: isoDateFormat(d),
+                currentMonth: d.getMonth() === month - 1,
+                day: d.getDate(),
+                dayOfWeek: d.toLocaleString('en', {weekday: 'long'}).toLowerCase(),
+              }))
+}
+const toggleHoliday = (e) => {
+  document.querySelectorAll(`[data-date="${e.target.dataset.date}"]`).forEach((e) => e.classList.toggle('holiday'))
+}
+const table = (headers, days) => {
+  const table = document.createElement('table')
+  const thead = document.createElement('thead')
+  const tr = document.createElement('tr')
+  for (const dayOfWeek of headers) {
+    const th = document.createElement('th')
+    th.classList.add('day-name')
+    th.textContent = dayOfWeek
+    tr.appendChild(th)
+  }
+  thead.appendChild(tr)
+  table.appendChild(thead)
+  const tbody = document.createElement('tbody')
+  for (let row = 0; row < 6; row++) {
+    const tr = document.createElement('tr')
+    const start = row * 7
+    for (const day of days.slice(start, start + 7)) {
+      const td = document.createElement('td')
+      const div = document.createElement('div')
+      const dayNumber = document.createElement('span')
+      dayNumber.classList.add('day-number')
+      dayNumber.textContent = day.day
+      dayNumber.title = day.date
+      dayNumber.dataset.date = day.date
+      dayNumber.addEventListener('click', toggleHoliday)
+      div.appendChild(dayNumber)
+      td.appendChild(div)
+      td.title = day.date
+      td.classList.toggle('other-month', !day.currentMonth)
+      td.classList.add('day', day.dayOfWeek)
+      tr.appendChild(td)
+    }
+    tbody.appendChild(tr)
+  }
+  table.appendChild(tbody)
+  return table
+}
+const leaf = (lang, year, month) => {
+  const tr = document.createElement('tr')
+  const td = document.createElement('td')
+  td.colSpan = 7;
+  const div = document.createElement('div')
+  div.classList.add('leaf-header')
+  const prevMonth = table(weekdayNames(lang, 'narrow'), month === 1 ? days(year - 1, 12) : days(year, month - 1))
+  prevMonth.classList.add('miniature', 'previous-month')
+  div.appendChild(prevMonth)
+  const span = document.createElement('span')
+  span.classList.add('leaf-title')
+  span.textContent = `${capitalize(new Date(year, month - 1).toLocaleString(lang, {month: 'long'}))} ${year}`
+  div.appendChild(span)
+  const nextMonth = table(weekdayNames(lang, 'narrow'), month === 12 ? days(year + 1, 1) : days(year, month + 1))
+  nextMonth.classList.add('miniature', 'next-month')
+  div.appendChild(nextMonth)
+  td.appendChild(div)
+  tr.appendChild(td)
+  const leaf = table(weekdayNames(lang, 'long').map(capitalize), days(year, month))
+  leaf.classList.add('leaf')
+  leaf.dataset.month = month
+  leaf.tHead.prepend(tr)
+  leaf.tBodies[0].classList.add('leaf-body')
+  return leaf
+}
+const promisedMoons = fetch('moons.json').then(p => p.json())
+const lang = 'es' || navigator.language
+const year = /*2023 ||*/ new Date().getFullYear()
+for (let i = 1; i <= 12; i++) root.appendChild(leaf(lang, year, i))
+promisedMoons.then((allMoons) => {
+  Object.entries(allMoons[year] || {}).forEach(([month, moons]) => {
+    moons.forEach(({date, phase}) => {
+      document.querySelector(`[data-month="${month}"] .leaf-body [data-date="${date}"]`).classList.add('moon', phase)
+    })
+  })
+})
+</script>
+
+</body>
+</html>
