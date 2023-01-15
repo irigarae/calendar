@@ -67,6 +67,20 @@
       width: 100%;
       height: 100%;
     }
+    .miniature .note {
+      display: none;
+    }
+    .leaf-body .note {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      /*height: 100%;*/
+      max-height: 100%;
+      padding: 1mm;
+      font-size: small;
+      overflow-y: scroll;
+      white-space: pre-wrap;
+    }
     .leaf-body .day-number {
       position: absolute;
       top: 1mm;
@@ -143,11 +157,22 @@ const days = (year, month) => {
                 date: isoDateFormat(d),
                 currentMonth: d.getMonth() === month - 1,
                 day: d.getDate(),
+                month: d.getMonth() + 1,
+                monthDay: isoDateFormat(d).slice(-5),
                 dayOfWeek: d.toLocaleString('en', {weekday: 'long'}).toLowerCase(),
               }))
 }
 const toggleHoliday = (e) => {
   document.querySelectorAll(`[data-date="${e.target.dataset.date}"]`).forEach((e) => e.classList.toggle('holiday'))
+}
+const editNote = (e) => {
+  const notes = JSON.parse(window.localStorage.getItem('notes')) || {}
+  const target = e.target;
+  const note = target.textContent
+  const monthDay = target.dataset.monthDay;
+  if (note) notes[monthDay] = note
+  else delete notes[monthDay]
+  window.localStorage.setItem('notes', JSON.stringify(notes))
 }
 const table = (headers, days) => {
   const table = document.createElement('table')
@@ -168,11 +193,21 @@ const table = (headers, days) => {
     for (const day of days.slice(start, start + 7)) {
       const td = document.createElement('td')
       const div = document.createElement('div')
+      const note = document.createElement('div')
+      note.classList.add('note')
+      note.contentEditable = 'true'
+      note.dataset.month = day.month
+      note.dataset.day = day.day
+      note.dataset.monthDay = day.monthDay
+      note.addEventListener('blur', editNote)
+      div.appendChild(note)
       const dayNumber = document.createElement('span')
       dayNumber.classList.add('day-number')
       dayNumber.textContent = day.day
       dayNumber.title = day.date
       dayNumber.dataset.date = day.date
+      dayNumber.dataset.day = day.day
+      dayNumber.dataset.month = day.month
       dayNumber.addEventListener('click', toggleHoliday)
       div.appendChild(dayNumber)
       td.appendChild(div)
@@ -221,6 +256,10 @@ promisedMoons.then((allMoons) => {
       document.querySelector(`[data-month="${month}"] .leaf-body [data-date="${date}"]`).classList.add('moon', phase)
     })
   })
+})
+Object.entries(JSON.parse(window.localStorage.getItem('notes')) || {}).forEach(([monthDay, note]) => {
+  const target = document.querySelector(`.leaf-body .note[data-month-day="${monthDay}"]`)
+  if (target) target.textContent = note
 })
 </script>
 
