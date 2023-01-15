@@ -31,7 +31,7 @@ clj -Sdeps '{:deps {org.clojure/data.json {:mvn/version "2.4.0"}}}'
 
 (let [month-names ["" "Ene" "Feb" "Mar" "Abr" "May" "Jun" "Jul" "Ago" "Set" "Oct" "Nov" "Dic"]
       moons (for [year (range 2023 (inc 2035))
-                  :let [content (slurp (str "/Users/mbl/Downloads/pdftotext/Agenda_astronomica_" year ".txt"))
+                  :let [content (slurp (str "~/Downloads/pdftotext/Agenda_astronomica_" year ".txt"))
                         content (re-find #"(?<=3. Fases de la Luna\nFase\n\nmes día h min)[\s\S]*(?=Todas las fechas anteriores)" content)
                         content (str/replace-first content #"\d+\n\n" "")
                         phases (re-seq #"Luna nueva|Cuarto creciente|Luna llena|Cuarto menguante" content)

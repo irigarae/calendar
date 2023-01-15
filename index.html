@@ -213,7 +213,7 @@ const leaf = (lang, year, month) => {
 }
 const promisedMoons = fetch('moons.json').then(p => p.json())
 const lang = 'es' || navigator.language
-const year = /*2023 ||*/ new Date().getFullYear()
+const year = /*2023 ||*/ new Date().getFullYear() + 1
 for (let i = 1; i <= 12; i++) root.appendChild(leaf(lang, year, i))
 promisedMoons.then((allMoons) => {
   Object.entries(allMoons[year] || {}).forEach(([month, moons]) => {
