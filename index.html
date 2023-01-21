@@ -149,12 +149,15 @@ const weekdayNames = (locale, style) => {
                .map((_, i) => new Date(start.getTime() + i * 86400 * 1000))
                .map((d) => d.toLocaleString(locale, {weekday: style}))
 }
+// Array.from({length: 12}).map((_, month) => new Date(year, month)).map(m => m.toLocaleDateString('en', {month: 'short'})).map(m => m.toLowerCase())
+const holidayKeys = ['prev', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'next']
 const days = (year, month) => {
   const start = startOfWeek(new Date(year, month - 1)) // months are 0-11
   return Array.from({length: 7 * 6}) // we force 6 rows (even in 28 days February starting on a Monday)
               .map((_, i) => new Date(start.getTime() + i * 86400 * 1000))
               .map((d) => ({
                 date: isoDateFormat(d),
+                year: d.getFullYear(),
                 currentMonth: d.getMonth() === month - 1,
                 day: d.getDate(),
                 month: d.getMonth() + 1,
@@ -163,13 +166,27 @@ const days = (year, month) => {
               }))
 }
 const toggleHoliday = (e) => {
-  document.querySelectorAll(`[data-date="${e.target.dataset.date}"]`).forEach((e) => e.classList.toggle('holiday'))
+  const target = e.target
+  const date = target.dataset.date
+  document.querySelectorAll(`[data-date="${date}"]`).forEach((e) => e.classList.toggle('holiday'))
+  const holidayKey = target.dataset.holidayKey
+  const day = parseInt(target.dataset.day)
+  const holidays = JSON.parse(window.localStorage.getItem('holidays')) || {}
+  let days = holidays[holidayKey]
+  if (days) {
+    if (days.includes(day)) days = days.filter(d => d !== day)
+    else days = [day, ...days].sort((a, b) => a - b)
+  } else {
+    days = [day]
+  }
+  holidays[holidayKey] = days
+  window.localStorage.setItem('holidays', JSON.stringify(holidays))
 }
 const editNote = (e) => {
   const notes = JSON.parse(window.localStorage.getItem('notes')) || {}
-  const target = e.target;
+  const target = e.target
   const note = target.textContent
-  const monthDay = target.dataset.monthDay;
+  const monthDay = target.dataset.monthDay
   if (note) notes[monthDay] = note
   else delete notes[monthDay]
   window.localStorage.setItem('notes', JSON.stringify(notes))
@@ -205,6 +222,7 @@ const table = (headers, days) => {
       dayNumber.classList.add('day-number')
       dayNumber.textContent = day.day
       dayNumber.title = day.date
+      dayNumber.dataset.year = day.year
       dayNumber.dataset.date = day.date
       dayNumber.dataset.day = day.day
       dayNumber.dataset.month = day.month
@@ -224,7 +242,7 @@ const table = (headers, days) => {
 const leaf = (lang, year, month) => {
   const tr = document.createElement('tr')
   const td = document.createElement('td')
-  td.colSpan = 7;
+  td.colSpan = 7
   const div = document.createElement('div')
   div.classList.add('leaf-header')
   const prevMonth = table(weekdayNames(lang, 'narrow'), month === 1 ? days(year - 1, 12) : days(year, month - 1))
@@ -244,15 +262,22 @@ const leaf = (lang, year, month) => {
   leaf.dataset.month = month
   leaf.tHead.prepend(tr)
   leaf.tBodies[0].classList.add('leaf-body')
+  leaf.querySelectorAll('.day-number').forEach((elem) => {
+    const y = parseInt(elem.dataset.year);
+    if (y < year) elem.dataset.holidayKey = 'prev'
+    else if (y > year) elem.dataset.holidayKey = 'next'
+    else elem.dataset.holidayKey = holidayKeys[elem.dataset.month]
+  })
   return leaf
 }
 const promisedMoons = fetch('moons.json').then(p => p.json())
 const url = new URL(location.href)
-const lang = url.searchParams.get('lang') || (/\w+/).exec(navigator.language)[0]
+const lang = url.searchParams.get('lang') || /\w+/.exec(navigator.language)[0]
 const year = parseInt(url.searchParams.get('year')) || new Date().getFullYear() + 1
 url.searchParams.set('lang', lang)
 url.searchParams.set('year', year)
 window.history.replaceState(null, '', url)
+const root = document.getElementById('root')
 for (let i = 1; i <= 12; i++) root.appendChild(leaf(lang, year, i))
 promisedMoons.then((allMoons) => {
   Object.entries(allMoons[year] || {}).forEach(([month, moons]) => {
@@ -263,8 +288,21 @@ promisedMoons.then((allMoons) => {
 })
 Object.entries(JSON.parse(window.localStorage.getItem('notes')) || {}).forEach(([monthDay, note]) => {
   const target = document.querySelector(`.leaf-body .note[data-month-day="${monthDay}"]`)
+  // e.g., 29 February
   if (target) target.textContent = note
 })
+const holidays = JSON.parse(window.localStorage.getItem('holidays')) || {}
+for (let i = 0; i < holidayKeys.length; i++) {
+  const holidayKey = holidayKeys[i]
+  const days = holidays[holidayKey]
+  if (days == null) continue
+  for (const day of days) {
+    const date = holidayKey === 'prev' ? new Date(year - 1, 12 - 1, day)
+               : holidayKey === 'next' ? new Date(year + 1, 1 - 1, day)
+               : new Date(year, holidayKeys.indexOf(holidayKey) - 1, day)
+    document.querySelectorAll(`[data-date="${isoDateFormat(date)}"]`).forEach(t => t.classList.toggle('holiday'))
+  }
+}
 </script>
 
 </body>
