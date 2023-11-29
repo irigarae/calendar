@@ -90,14 +90,28 @@
     .day-number {
       font-variant-numeric: tabular-nums;
       cursor: pointer;
-      /*border-width: 2px;*/
-      /*border-style: solid;*/
-      /*border-color: transparent;*/
-      /*border-radius: 5px;*/
     }
     .holiday, .sunday .day-number {
       color: #DF3232;
-      /*border-color: black;*/
+    }
+    body.graycolor .day-number {
+      border-width: 2px;
+      border-style: solid;
+      border-color: transparent;
+      border-radius: 5px;
+    }
+    body.graycolor .holiday, body.graycolor .sunday .day-number {
+      border-color: black;
+      color: black;
+    }
+    body.graycolor .other-month .day-number {
+      border-color: transparent;
+    }
+    body.graycolor .previous-month .holiday,
+    body.graycolor .previous-month .sunday .day-number,
+    body.graycolor .next-month .holiday,
+    body.graycolor .next-month .sunday .day-number {
+      border-width: 1px;
     }
     .moon::before {
       color: transparent;
@@ -278,6 +292,7 @@ const year = parseInt(url.searchParams.get('year')) || new Date().getFullYear() 
 url.searchParams.set('lang', lang)
 url.searchParams.set('year', year)
 window.history.replaceState(null, '', url)
+document.body.addEventListener('dblclick', (e) => document.body.classList.toggle('graycolor'))
 const root = document.getElementById('root')
 for (let i = 1; i <= 12; i++) root.appendChild(leaf(lang, year, i))
 promisedMoons.then((allMoons) => {
