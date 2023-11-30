@@ -59,7 +59,7 @@
     .miniature .day {
       text-align: right;
     }
-    .other-month .day-number {
+    .other-month .day-header {
       opacity: 10%;
     }
     .leaf-body td > div {
@@ -81,7 +81,7 @@
       overflow-y: scroll;
       white-space: pre-wrap;
     }
-    .leaf-body .day-number {
+    .leaf-body .day-header {
       position: absolute;
       top: 1mm;
       right: 1mm;
@@ -233,6 +233,13 @@ const table = (headers, days) => {
       note.dataset.monthDay = day.monthDay
       note.addEventListener('blur', editNote)
       div.appendChild(note)
+      const dayHeader = document.createElement('span')
+      dayHeader.classList.add('day-header')
+      dayHeader.title = day.date
+      dayHeader.dataset.year = day.year
+      dayHeader.dataset.date = day.date
+      dayHeader.dataset.day = day.day
+      dayHeader.dataset.month = day.month
       const dayNumber = document.createElement('span')
       dayNumber.classList.add('day-number')
       dayNumber.textContent = day.day
@@ -242,7 +249,8 @@ const table = (headers, days) => {
       dayNumber.dataset.day = day.day
       dayNumber.dataset.month = day.month
       dayNumber.addEventListener('click', toggleHoliday)
-      div.appendChild(dayNumber)
+      dayHeader.appendChild(dayNumber)
+      div.appendChild(dayHeader)
       td.appendChild(div)
       td.title = day.date
       td.classList.toggle('other-month', !day.currentMonth)
@@ -277,7 +285,7 @@ const leaf = (lang, year, month) => {
   leaf.dataset.month = month
   leaf.tHead.prepend(tr)
   leaf.tBodies[0].classList.add('leaf-body')
-  leaf.querySelectorAll('.day-number').forEach((elem) => {
+  leaf.querySelectorAll('.day-header').forEach((elem) => {
     const y = parseInt(elem.dataset.year);
     if (y < year) elem.dataset.holidayKey = 'prev'
     else if (y > year) elem.dataset.holidayKey = 'next'
