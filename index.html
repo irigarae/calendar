@@ -172,7 +172,11 @@ const holidayKeys = ['prev', 'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'a
 const days = (year, month) => {
   const start = startOfWeek(new Date(year, month - 1)) // months are 0-11
   return Array.from({length: 7 * 6}) // we force 6 rows (even in 28 days February starting on a Monday)
-              .map((_, i) => new Date(start.getTime() + i * 86400 * 1000))
+              .map((_, i) => {
+                const date = new Date(start)
+                date.setDate(start.getDate() + i)
+                return date
+              })
               .map((d) => ({
                 date: isoDateFormat(d),
                 year: d.getFullYear(),
